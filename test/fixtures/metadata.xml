@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <Schema Namespace="StandardODATA" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <EntityType Name="Document_SalesOrder">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Number" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="Сумма" Type="Edm.Decimal" />
+        <Property Name="Комментарий" Type="Edm.String" />
+        <Property Name="Posted" Type="Edm.Boolean" />
+        <NavigationProperty Name="Контрагент" Type="StandardODATA.Catalog_Контрагенты" />
+        <NavigationProperty Name="ПлатежноеПоручение" Type="StandardODATA.Document_ПлатежноеПоручение" />
+      </EntityType>
+
+      <EntityType Name="Document_ПлатежноеПоручение">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Number" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="СуммаДокумента" Type="Edm.Decimal" />
+        <Property Name="НазначениеПлатежа" Type="Edm.String" />
+        <Property Name="Posted" Type="Edm.Boolean" />
+        <NavigationProperty Name="Контрагент" Type="StandardODATA.Catalog_Контрагенты" />
+      </EntityType>
+
+      <EntityType Name="Document_СчетНаОплатуПокупателю">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Number" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="СуммаДокумента" Type="Edm.Decimal" />
+        <Property Name="Posted" Type="Edm.Boolean" />
+        <NavigationProperty Name="Контрагент" Type="StandardODATA.Catalog_Контрагенты" />
+      </EntityType>
+
+      <EntityType Name="Document_РеализацияТоваровУслуг">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Number" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="СуммаДокумента" Type="Edm.Decimal" />
+        <Property Name="Posted" Type="Edm.Boolean" />
+        <NavigationProperty Name="Контрагент" Type="StandardODATA.Catalog_Контрагенты" />
+      </EntityType>
+
+      <EntityType Name="Catalog_Контрагенты">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Code" Type="Edm.String" />
+        <Property Name="Description" Type="Edm.String" />
+        <Property Name="ИНН" Type="Edm.String" />
+        <Property Name="DeletionMark" Type="Edm.Boolean" />
+        <Property Name="ApiSecretToken" Type="Edm.String" />
+        <Property Name="UserPassword" Type="Edm.String" />
+      </EntityType>
+
+      <EntityType Name="Catalog_Номенклатура">
+        <Key>
+          <PropertyRef Name="Ref_Key" />
+        </Key>
+        <Property Name="Ref_Key" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Description" Type="Edm.String" />
+        <Property Name="Артикул" Type="Edm.String" />
+      </EntityType>
+
+      <EntityContainer Name="Container">
+        <EntitySet Name="Document_SalesOrder" EntityType="StandardODATA.Document_SalesOrder" />
+        <EntitySet Name="Document_ПлатежноеПоручение" EntityType="StandardODATA.Document_ПлатежноеПоручение" />
+        <EntitySet Name="Document_СчетНаОплатуПокупателю" EntityType="StandardODATA.Document_СчетНаОплатуПокупателю" />
+        <EntitySet Name="Document_РеализацияТоваровУслуг" EntityType="StandardODATA.Document_РеализацияТоваровУслуг" />
+        <EntitySet Name="Catalog_Контрагенты" EntityType="StandardODATA.Catalog_Контрагенты" />
+        <EntitySet Name="Catalog_Номенклатура" EntityType="StandardODATA.Catalog_Номенклатура" />
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>
