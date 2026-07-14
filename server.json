@@ -1,0 +1,55 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.pyrfor/onec-odata-mcp",
+  "title": "1C OData MCP",
+  "description": "Read-only MCP server bridging AI agents to 1C:Enterprise via OData — metadata discovery, NL-friendly query builder, and validated entity access.",
+  "repository": {
+    "url": "https://github.com/pyrfor/onec-odata-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "onec-odata-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ONEC_BASE_URL",
+          "description": "1C OData endpoint URL (e.g. https://host/db/odata/standard.odata)",
+          "isRequired": true
+        },
+        {
+          "name": "ONEC_USERNAME",
+          "description": "Basic auth username for the OData endpoint",
+          "isRequired": true
+        },
+        {
+          "name": "ONEC_PASSWORD",
+          "description": "Basic auth password for the OData endpoint",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "ONEC_DATABASE",
+          "description": "Optional database name hint",
+          "isRequired": false
+        },
+        {
+          "name": "ONEC_METADATA_CACHE_TTL_MS",
+          "description": "Metadata cache TTL in milliseconds (default 3600000)",
+          "isRequired": false
+        },
+        {
+          "name": "ONEC_CONFIG_PATH",
+          "description": "Optional path to JSON config file ({ baseUrl, username, password })",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

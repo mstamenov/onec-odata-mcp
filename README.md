@@ -6,6 +6,16 @@ Give an AI assistant (Claude Desktop, Cursor, any MCP client) read-only access t
 
 ## Quick start
 
+**One-liner (after npm publish):**
+
+```bash
+npx -y onec-odata-mcp
+```
+
+Set `ONEC_BASE_URL`, `ONEC_USERNAME`, and `ONEC_PASSWORD` in your MCP client config (see below).
+
+**From source:**
+
 ```bash
 npm install
 npm run build
