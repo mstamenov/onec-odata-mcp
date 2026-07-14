@@ -1,13 +1,13 @@
 {
   "name": "onec-odata-mcp",
-  "version": "1.0.0",
-  "mcpName": "io.github.pyrfor/onec-odata-mcp",
+  "version": "1.0.1",
+  "mcpName": "io.github.alexgrebeshok-coder/onec-odata-mcp",
   "description": "MCP server bridging AI agents to 1C:Enterprise (1С:Предприятие) via OData",
   "license": "MIT",
   "author": "Aleksandr Grebeshok",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pyrfor/onec-odata-mcp"
+    "url": "git+https://github.com/pyrfor/onec-odata-mcp.git"
   },
   "type": "module",
   "main": "dist/index.js",
