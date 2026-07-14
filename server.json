@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pyrfor/onec-odata-mcp",
   "title": "1C OData MCP",
-  "description": "Read-only MCP server bridging AI agents to 1C:Enterprise via OData — metadata discovery, NL-friendly query builder, and validated entity access.",
+  "description": "Read-only MCP server for 1C:Enterprise via OData with metadata and query builder tools.",
   "repository": {
     "url": "https://github.com/pyrfor/onec-odata-mcp",
     "source": "github"
