@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "onec-odata": {
+      "command": "npx",
+      "args": ["-y", "onec-odata-mcp"],
+      "env": {
+        "ONEC_BASE_URL": "https://1c.example.com/your_db/odata/standard.odata",
+        "ONEC_USERNAME": "odata_user",
+        "ONEC_PASSWORD": "your_password"
+      }
+    }
+  }
+}
