@@ -4,6 +4,8 @@ export type OneCConfig = {
   password: string
   database?: string
   metadataCacheTtlMs?: number
+  /** When true, odata_write may perform real POST/PATCH/DELETE. Default: false (safe). */
+  writable?: boolean
 }
 
 export type ODataProperty = {

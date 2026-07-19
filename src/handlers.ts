@@ -1,6 +1,6 @@
 import { configMissingResponse, getConfig, getConfigPath } from './config.js'
 import { CONFIG_SETUP_INSTRUCTIONS } from './types.js'
-import { odataCount, odataRequest } from './odata-client.js'
+import { odataCount, odataRequest, odataWrite, type ODataWriteMethod } from './odata-client.js'
 import { loadMetadata, getMetadataSummary, type MetadataFetcher } from './metadata/service.js'
 import { explainEntity } from './metadata/parse-metadata.js'
 import { buildODataQuery, parseBuildQueryArgs } from './query/builder.js'
@@ -159,6 +159,78 @@ export async function handleBuildQuery(args: Record<string, unknown>): Promise<s
   }
 }
 
+export async function handleWrite(args: Record<string, unknown>): Promise<string> {
+  const config = requireConfig()
+  if (!config) return configMissingResponse()
+
+  const entity = String(args.entity ?? '')
+  if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
+
+  const method = String(args.method ?? '') as ODataWriteMethod
+  if (method !== 'create' && method !== 'update' && method !== 'delete') {
+    return JSON.stringify({
+      error: 'Invalid method',
+      hint: 'method must be one of: create, update, delete',
+    })
+  }
+
+  if ((method === 'update' || method === 'delete') && (args.key === undefined || args.key === null || args.key === '')) {
+    return JSON.stringify({ error: 'Missing required field: key (required for update/delete)' })
+  }
+
+  if ((method === 'create' || method === 'update') && (args.data === undefined || args.data === null)) {
+    return JSON.stringify({ error: 'Missing required field: data (required for create/update)' })
+  }
+
+  const key = args.key !== undefined && args.key !== null ? String(args.key) : undefined
+  const data =
+    args.data !== undefined && args.data !== null && typeof args.data === 'object' && !Array.isArray(args.data)
+      ? (args.data as Record<string, unknown>)
+      : undefined
+
+  // dryRun defaults to true — only explicit false enables real write path
+  const dryRun = args.dryRun !== false
+
+  if (dryRun) {
+    const base = config.baseUrl.replace(/\/$/, '')
+    let url: string
+    if (method === 'create') {
+      url = `${base}/${entity}`
+    } else {
+      url = `${base}/${entity}(${key})`
+    }
+    const wouldExecute: Record<string, unknown> = { method, entity, url }
+    if (key !== undefined) wouldExecute.key = key
+    if (method === 'create' || method === 'update') wouldExecute.body = data
+
+    return JSON.stringify(
+      {
+        dryRun: true,
+        wouldExecute,
+        note: 'Запись НЕ выполнена (dry-run). Передайте dryRun:false, если действительно нужно записать.',
+      },
+      null,
+      2,
+    )
+  }
+
+  if (!config.writable) {
+    return JSON.stringify(
+      {
+        error: 'Запись в эту базу отключена (writable=false)',
+        entity,
+        method,
+        hint:
+          'Включите запись явно: ONEC_WRITABLE=true в env, либо "writable": true в ~/.onec-odata/onec-config.json — только если это осознанное решение для этой базы.',
+      },
+      null,
+      2,
+    )
+  }
+
+  return odataWrite(entity, method, config, { key, data })
+}
+
 export async function handleFinancialSummary(_args: Record<string, unknown>): Promise<string> {
   const config = requireConfig()
   if (!config) return configMissingResponse()
@@ -216,6 +288,7 @@ export const toolHandlers: Record<string, (args: Record<string, unknown>) => Pro
   odata_build_query: handleBuildQuery,
   odata_query: handleQuery,
   odata_count: handleCount,
+  odata_write: handleWrite,
   odata_financial_summary: handleFinancialSummary,
 }
 
@@ -326,6 +399,37 @@ export const toolDefinitions = [
         filter: { type: 'string', description: 'OData $filter expression' },
       },
       required: ['entity'],
+    },
+  },
+  {
+    name: 'odata_write',
+    description:
+      'Create/update/delete an OData entity. Default dryRun=true (preview only). Real write requires writable:true on the base config AND dryRun:false.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        entity: { type: 'string', description: 'Entity name (e.g. Catalog_Контрагенты)' },
+        method: {
+          type: 'string',
+          enum: ['create', 'update', 'delete'],
+          description: 'Write operation: create (POST), update (PATCH), delete (DELETE)',
+        },
+        key: {
+          type: 'string',
+          description:
+            'OData entity key for update/delete, as-is (e.g. guid\'...\', numeric id). Caller formats key quoting.',
+        },
+        data: {
+          type: 'object',
+          description: 'JSON body for create/update',
+        },
+        dryRun: {
+          type: 'boolean',
+          description:
+            'If true (default), return wouldExecute preview without network call. Pass false only when ready to write.',
+        },
+      },
+      required: ['entity', 'method'],
     },
   },
   {

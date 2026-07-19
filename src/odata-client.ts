@@ -75,3 +75,82 @@ export async function odataCount(
     return JSON.stringify({ error: message })
   }
 }
+
+export type ODataWriteMethod = 'create' | 'update' | 'delete'
+
+export type ODataWriteOptions = {
+  key?: string
+  data?: Record<string, unknown>
+}
+
+/**
+ * Perform a write against 1C OData.
+ * create → POST /entity, update → PATCH /entity(key), delete → DELETE /entity(key).
+ * Caller is responsible for OData key quoting (guid'...', numbers, etc.).
+ */
+export async function odataWrite(
+  entity: string,
+  method: ODataWriteMethod,
+  config: OneCConfig,
+  options: ODataWriteOptions = {},
+): Promise<string> {
+  let path: string
+  let httpMethod: string
+  let body: string | undefined
+
+  if (method === 'create') {
+    path = `/${entity}`
+    httpMethod = 'POST'
+    body = JSON.stringify(options.data ?? {})
+  } else if (method === 'update') {
+    path = `/${entity}(${options.key})`
+    httpMethod = 'PATCH'
+    body = JSON.stringify(options.data ?? {})
+  } else {
+    path = `/${entity}(${options.key})`
+    httpMethod = 'DELETE'
+  }
+
+  const url = new URL(path, config.baseUrl)
+  const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64')
+
+  try {
+    const headers: Record<string, string> = {
+      Authorization: `Basic ${auth}`,
+      Accept: 'application/json',
+    }
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json'
+    }
+
+    const res = await fetch(url.toString(), {
+      method: httpMethod,
+      headers,
+      body,
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      return JSON.stringify({ error: `HTTP ${res.status}`, detail: text.slice(0, 500) })
+    }
+
+    if (method === 'delete') {
+      return JSON.stringify({ status: res.status, entity }, null, 2)
+    }
+
+    const text = await res.text()
+    if (!text) {
+      return JSON.stringify({ status: res.status, entity }, null, 2)
+    }
+    try {
+      const data = JSON.parse(text)
+      return JSON.stringify(data, null, 2)
+    } catch {
+      return JSON.stringify({ status: res.status, entity, body: text.slice(0, 500) }, null, 2)
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return JSON.stringify({ error: message, url: url.toString() })
+  }
+}
