@@ -31,6 +31,9 @@ export function getConfig(): OneCConfig | null {
     if (process.env.ONEC_METADATA_CACHE_TTL_MS) {
       env.metadataCacheTtlMs = Number(process.env.ONEC_METADATA_CACHE_TTL_MS)
     }
+    if (process.env.ONEC_WRITABLE === 'true' || process.env.ONEC_WRITABLE === '1') {
+      env.writable = true
+    }
     return env
   }
 

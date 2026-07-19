@@ -64,7 +64,7 @@ claude mcp add onec-odata \
 
 Готовый сниппет лежит в [`examples/claude_desktop_config.json`](./examples/claude_desktop_config.json).
 
-Опционально: `ONEC_DATABASE` (подсказка имени базы), `ONEC_METADATA_CACHE_TTL_MS` (TTL кэша метаданных, по умолчанию 1 час). Либо вместо переменных окружения — JSON-файл `~/.onec-odata/onec-config.json` с полями `baseUrl`, `username`, `password`, путь к которому задаётся через `ONEC_CONFIG_PATH`.
+Опционально: `ONEC_DATABASE` (подсказка имени базы), `ONEC_METADATA_CACHE_TTL_MS` (TTL кэша метаданных, по умолчанию 1 час), `ONEC_WRITABLE=true` (разрешить реальную запись через `odata_write`; по умолчанию false). Либо вместо переменных окружения — JSON-файл `~/.onec-odata/onec-config.json` с полями `baseUrl`, `username`, `password` (и опционально `"writable": true`), путь к которому задаётся через `ONEC_CONFIG_PATH`.
 
 ### Шаг 3 — первый запрос
 
@@ -87,16 +87,18 @@ Claude вызовет `odata_list_entities`, увидит список и дал
 | `odata_build_query` | Строит и проверяет `$filter`/`$select`/`$orderby` из структурированных параметров запроса | вызывается автоматически — Claude сам переводит «за июнь» в даты, тул собирает и валидирует фильтр |
 | `odata_query` | Запрос к сущности с готовыми OData-параметрами | «Покажи остатки по счёту 51 за июнь» |
 | `odata_count` | Количество записей, опционально с фильтром | «Сколько контрагентов зарегистрировано в этом году?» |
+| `odata_write` | Создание/изменение/удаление сущности (POST/PATCH/DELETE) | «Создай контрагента…» — сначала dry-run-превью |
 | `odata_financial_summary` | Автообнаружение типовых финансовых сущностей + счётчики | «Дай сводку по счетам, реализациям и контрагентам» |
 
 Обычно агент сам комбинирует `odata_build_query` → `odata_query`/`odata_count`, тебе достаточно спросить своими словами.
 
 ## Безопасность
 
-- **Только чтение.** Под капотом сервер шлёт исключительно HTTP `GET` (`src/odata-client.ts`) — ни одного `POST`/`PATCH`/`DELETE` к базе 1С нет в коде. Случайно изменить данные через этот MCP нельзя.
+- **По умолчанию только чтение.** Флаг `writable` в конфиге базы (env `ONEC_WRITABLE=true` / `"writable": true` в `~/.onec-odata/onec-config.json`) по умолчанию **false**. Без него реальные `POST`/`PATCH`/`DELETE` не уходят в 1С.
+- **Запись — только через `odata_write`.** У инструмента `dryRun` по умолчанию **true**: всегда сначала превью `{dryRun: true, wouldExecute: …}` без сетевого вызова. Реальная запись требует **и** `writable: true` на этой базе, **и** явного `dryRun: false`.
 - **Пароль** передаётся Basic Auth (base64 в заголовке каждого запроса — как требует OData) и хранится либо в env-переменных конфига твоего MCP-клиента (рекомендуется), либо в локальном файле `~/.onec-odata/onec-config.json`. Сервер не логирует и не возвращает пароль в ответах инструментов.
 - **Поля-секреты** (`password`, `token`, `apikey`, `secret` и т.п. в названиях) автоматически исключены из подсказок «возможно, вы имели в виду» (`src/query/fuzzy.ts`), чтобы агент не подсвечивал их случайно.
-- **Рекомендация:** заведи в 1С отдельного OData-пользователя с ролью только на чтение, не используй административную учётку.
+- **Рекомендация:** заведи в 1С отдельного OData-пользователя с ролью только на чтение для обычной работы; writable-учётку и `ONEC_WRITABLE=true` включай только осознанно.
 
 ## Требования
 
@@ -121,10 +123,10 @@ MIT
 
 ## English (short)
 
-MCP server giving Claude (or any MCP client) **read-only** access to a 1C:Enterprise database via its standard OData endpoint. No spreadsheet exports, no hand-written OData URLs — ask in natural language, get structured data from catalogs and documents.
+MCP server giving Claude (or any MCP client) access to a 1C:Enterprise database via its standard OData endpoint. **Read-only by default** (`writable: false`); writes go through `odata_write` and always dry-run first unless you explicitly enable `writable: true` and pass `dryRun: false`. No spreadsheet exports, no hand-written OData URLs — ask in natural language, get structured data from catalogs and documents.
 
 ```bash
 npx -y onec-odata-mcp
 ```
 
-Configure via `ONEC_BASE_URL` / `ONEC_USERNAME` / `ONEC_PASSWORD` env vars (see the Russian quick-start above for `claude mcp add` and `claude_desktop_config.json` snippets — the JSON is language-agnostic). Only HTTP `GET` requests are ever made; the server cannot mutate 1C data. Published on npm as [`onec-odata-mcp`](https://www.npmjs.com/package/onec-odata-mcp) and listed in the official MCP Registry as `io.github.alexgrebeshok-coder/onec-odata-mcp`.
+Configure via `ONEC_BASE_URL` / `ONEC_USERNAME` / `ONEC_PASSWORD` env vars (see the Russian quick-start above for `claude mcp add` and `claude_desktop_config.json` snippets — the JSON is language-agnostic). Optional: `ONEC_WRITABLE=true` to allow real writes. Published on npm as [`onec-odata-mcp`](https://www.npmjs.com/package/onec-odata-mcp) and listed in the official MCP Registry as `io.github.alexgrebeshok-coder/onec-odata-mcp`.
