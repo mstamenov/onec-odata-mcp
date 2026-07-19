@@ -16,6 +16,16 @@
 
 Ничего ставить локально не нужно, `npx` подтянет пакет при первом запуске:
 
+**One-liner (after npm publish):**
+
+```bash
+npx -y onec-odata-mcp
+```
+
+Set `ONEC_BASE_URL`, `ONEC_USERNAME`, and `ONEC_PASSWORD` in your MCP client config (see below).
+
+**From source:**
+
 ```bash
 npx -y onec-odata-mcp
 ```
