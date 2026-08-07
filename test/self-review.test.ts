@@ -33,3 +33,19 @@ test('self-review: fuzzy never suggests secret-like field names', () => {
   assert.ok(suggestions.every((s) => !isSecretFieldName(s)))
   assert.ok(!suggestions.includes('UserPassword'))
 })
+
+// Версия в server.json — это то, что читает MCP Registry. Она уже разъезжалась: пакет
+// был 1.1.1, манифест объявлял 1.0.1, то есть листинг указывал на выпуск двухлетней
+// давности по счёту релизов. Число руками не удержать — держим тестом.
+test('server.json объявляет ту же версию, что package.json', async () => {
+  const [pkg, srv] = await Promise.all([
+    import('../package.json', { with: { type: 'json' } }),
+    import('../server.json', { with: { type: 'json' } }),
+  ]);
+  const want = (pkg as any).default.version;
+  const manifest = (srv as any).default;
+  assert.equal(manifest.version, want, 'server.json.version отстал от package.json');
+  for (const p of manifest.packages ?? []) {
+    assert.equal(p.version, want, `packages[].version (${p.identifier}) отстал от package.json`);
+  }
+});
