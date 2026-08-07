@@ -1,8 +1,8 @@
 {
   "name": "onec-odata-mcp",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "mcpName": "io.github.alexgrebeshok-coder/onec-odata-mcp",
-  "description": "MCP server bridging AI agents to 1C:Enterprise (1С:Предприятие) via OData",
+  "description": "MCP server bridging AI agents to 1C:Enterprise (1\u0421:\u041f\u0440\u0435\u0434\u043f\u0440\u0438\u044f\u0442\u0438\u0435) via OData",
   "license": "MIT",
   "author": "Aleksandr Grebeshok",
   "repository": {
@@ -28,7 +28,7 @@
     "mcp",
     "model-context-protocol",
     "1c",
-    "1с",
+    "1\u0441",
     "odata",
     "enterprise",
     "llm",
@@ -42,5 +42,10 @@
     "@types/node": "^20.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0"
-  }
+  },
+  "files": [
+    "dist",
+    "examples",
+    "server.json"
+  ]
 }
