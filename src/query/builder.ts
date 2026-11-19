@@ -117,7 +117,11 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
         if (resolved.kind === 'navigation') {
           warnings.push(`Сортировка по навигационному свойству "${o.field}" может не поддерживаться.`)
         }
-        return `${o.field} ${o.direction ?? 'asc'}`
+        const direction = o.direction ?? 'asc'
+        if (direction !== 'asc' && direction !== 'desc') {
+          throw new Error(`Направление сортировки должно быть asc или desc, получено: ${JSON.stringify(direction)}`)
+        }
+        return `${o.field} ${direction}`
       })
       .join(', ')
   }

@@ -23,12 +23,20 @@ function withTempConfig(run: (configPath: string, cacheDir: string) => Promise<v
   const dir = mkdtempSync(join(tmpdir(), 'onec-mcp-'))
   const configPath = join(dir, 'onec-config.json')
   const cacheDir = join(dir, 'cache')
-  const prevConfig = process.env.ONEC_CONFIG_PATH
+  // Чистим все ONEC_*: иначе getConfig берёт настоящую базу из окружения разработчика,
+  // и «тест без конфига» уходит в сеть с реальными учётными данными.
+  const saved = new Map<string, string | undefined>()
+  for (const name of Object.keys(process.env).filter((n) => n.startsWith('ONEC_'))) {
+    saved.set(name, process.env[name])
+    delete process.env[name]
+  }
   process.env.ONEC_CONFIG_PATH = configPath
 
   return run(configPath, cacheDir).finally(() => {
-    if (prevConfig === undefined) delete process.env.ONEC_CONFIG_PATH
-    else process.env.ONEC_CONFIG_PATH = prevConfig
+    delete process.env.ONEC_CONFIG_PATH
+    for (const [name, value] of saved) {
+      if (value !== undefined) process.env[name] = value
+    }
     setMetadataFetcher(null)
     setMetadataCache(null)
     rmSync(dir, { recursive: true, force: true })

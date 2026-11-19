@@ -40,6 +40,24 @@ test('encodeODataQueryParams URL-encodes Cyrillic filter', () => {
   assert.ok(decoded.includes('Ромашка'))
 })
 
-test('buildFilterComparison contains operator', () => {
-  assert.equal(buildFilterComparison('Description', 'contains', "'test'"), "contains(Description,'test')")
+test('buildFilterComparison contains operator uses OData v3 substringof', () => {
+  assert.equal(
+    buildFilterComparison('Description', 'contains', "'test'"),
+    "substringof('test',Description) eq true",
+  )
+})
+
+test('formatDateTimeLiteral accepts an already wrapped literal', () => {
+  assert.equal(formatDateTimeLiteral("datetime'2024-06-15T12:30:00'"), "datetime'2024-06-15T12:30:00'")
+})
+
+test('formatDateTimeLiteral rejects anything that is not a strict date', () => {
+  for (const bad of [
+    "datetime'2024-01-01T00:00:00' or 1 eq 1 or Date eq datetime'2024-01-01T00:00:00'",
+    "2024-01-01T' or 1 eq 1 or Date eq datetime'2024-01-01",
+    '2024-01-01T00:00:00 or true',
+    'вчера',
+  ]) {
+    assert.throws(() => formatDateTimeLiteral(bad), /Некорректный формат даты/, bad)
+  }
 })

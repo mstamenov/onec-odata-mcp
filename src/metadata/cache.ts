@@ -31,7 +31,7 @@ export class MetadataCache {
   constructor(options: MetadataCacheOptions = {}) {
     this.cacheDir = options.cacheDir ?? DEFAULT_CACHE_DIR
     this.ttlMs = options.ttlMs ?? DEFAULT_METADATA_CACHE_TTL_MS
-    mkdirSync(this.cacheDir, { recursive: true })
+    mkdirSync(this.cacheDir, { recursive: true, mode: 0o700 })
   }
 
   get(cacheKey: string): MetadataCacheEntry | null {
@@ -57,7 +57,10 @@ export class MetadataCache {
 
   set(cacheKey: string, xml: string): MetadataCacheEntry {
     const entry: MetadataCacheEntry = { cacheKey, fetchedAt: Date.now(), xml }
-    writeFileSync(cacheFilePath(this.cacheDir, cacheKey), JSON.stringify(entry), 'utf-8')
+    writeFileSync(cacheFilePath(this.cacheDir, cacheKey), JSON.stringify(entry), {
+      encoding: 'utf-8',
+      mode: 0o600,
+    })
     return entry
   }
 

@@ -1,4 +1,5 @@
 import type { OneCConfig } from './types.js'
+import { buildODataUrl, buildWriteUrl, type WriteMethod } from './url.js'
 
 export type ODataRequestOptions = {
   filter?: string
@@ -8,25 +9,32 @@ export type ODataRequestOptions = {
   expand?: string
 }
 
+function basicAuth(config: OneCConfig): string {
+  return `Basic ${Buffer.from(`${config.username}:${config.password}`).toString('base64')}`
+}
+
+function errorJson(err: unknown): string {
+  return JSON.stringify({ error: err instanceof Error ? err.message : String(err) })
+}
+
+/** GET resource path relative to the service root ('' = entity list). */
 export async function odataRequest(
   path: string,
   config: OneCConfig,
   options?: ODataRequestOptions,
 ): Promise<string> {
-  const url = new URL(path, config.baseUrl)
-
-  if (options?.filter) url.searchParams.set('$filter', options.filter)
-  if (options?.select) url.searchParams.set('$select', options.select)
-  if (options?.top) url.searchParams.set('$top', String(options.top))
-  if (options?.orderBy) url.searchParams.set('$orderby', options.orderBy)
-  if (options?.expand) url.searchParams.set('$expand', options.expand)
-
-  const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64')
-
   try {
+    const url = buildODataUrl(config.baseUrl, path)
+
+    if (options?.filter) url.searchParams.set('$filter', options.filter)
+    if (options?.select) url.searchParams.set('$select', options.select)
+    if (options?.top !== undefined) url.searchParams.set('$top', String(options.top))
+    if (options?.orderBy) url.searchParams.set('$orderby', options.orderBy)
+    if (options?.expand) url.searchParams.set('$expand', options.expand)
+
     const res = await fetch(url.toString(), {
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: basicAuth(config),
         Accept: 'application/json',
       },
       signal: AbortSignal.timeout(30000),
@@ -40,8 +48,7 @@ export async function odataRequest(
     const data = await res.json()
     return JSON.stringify(data, null, 2)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    return JSON.stringify({ error: message, url: url.toString() })
+    return errorJson(err)
   }
 }
 
@@ -50,15 +57,13 @@ export async function odataCount(
   config: OneCConfig,
   filter?: string,
 ): Promise<string> {
-  const url = new URL(`/${entity}/$count`, config.baseUrl)
-  if (filter) url.searchParams.set('$filter', filter)
-
-  const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64')
-
   try {
+    const url = buildODataUrl(config.baseUrl, `${entity}/$count`)
+    if (filter) url.searchParams.set('$filter', filter)
+
     const res = await fetch(url.toString(), {
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: basicAuth(config),
         Accept: 'text/plain',
       },
       signal: AbortSignal.timeout(30000),
@@ -68,15 +73,18 @@ export async function odataCount(
       return JSON.stringify({ error: `HTTP ${res.status}` })
     }
 
-    const count = await res.text()
-    return JSON.stringify({ entity, count: Number(count) })
+    const text = (await res.text()).trim()
+    const count = Number(text)
+    if (text === '' || !Number.isFinite(count)) {
+      return JSON.stringify({ error: 'Сервер вернул не число в ответ на $count', detail: text.slice(0, 200) })
+    }
+    return JSON.stringify({ entity, count })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    return JSON.stringify({ error: message })
+    return errorJson(err)
   }
 }
 
-export type ODataWriteMethod = 'create' | 'update' | 'delete'
+export type ODataWriteMethod = WriteMethod
 
 export type ODataWriteOptions = {
   key?: string
@@ -94,29 +102,13 @@ export async function odataWrite(
   config: OneCConfig,
   options: ODataWriteOptions = {},
 ): Promise<string> {
-  let path: string
-  let httpMethod: string
-  let body: string | undefined
-
-  if (method === 'create') {
-    path = `/${entity}`
-    httpMethod = 'POST'
-    body = JSON.stringify(options.data ?? {})
-  } else if (method === 'update') {
-    path = `/${entity}(${options.key})`
-    httpMethod = 'PATCH'
-    body = JSON.stringify(options.data ?? {})
-  } else {
-    path = `/${entity}(${options.key})`
-    httpMethod = 'DELETE'
-  }
-
-  const url = new URL(path, config.baseUrl)
-  const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64')
-
   try {
+    const url = buildWriteUrl(config.baseUrl, entity, method, options.key)
+    const httpMethod = method === 'create' ? 'POST' : method === 'update' ? 'PATCH' : 'DELETE'
+    const body = method === 'delete' ? undefined : JSON.stringify(options.data ?? {})
+
     const headers: Record<string, string> = {
-      Authorization: `Basic ${auth}`,
+      Authorization: basicAuth(config),
       Accept: 'application/json',
     }
     if (body !== undefined) {
@@ -150,7 +142,6 @@ export async function odataWrite(
       return JSON.stringify({ status: res.status, entity, body: text.slice(0, 500) }, null, 2)
     }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    return JSON.stringify({ error: message, url: url.toString() })
+    return errorJson(err)
   }
 }

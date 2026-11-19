@@ -28,8 +28,9 @@ export function getConfig(): OneCConfig | null {
       password: process.env.ONEC_PASSWORD ?? '',
     }
     if (process.env.ONEC_DATABASE) env.database = process.env.ONEC_DATABASE
-    if (process.env.ONEC_METADATA_CACHE_TTL_MS) {
-      env.metadataCacheTtlMs = Number(process.env.ONEC_METADATA_CACHE_TTL_MS)
+    const ttl = Number(process.env.ONEC_METADATA_CACHE_TTL_MS)
+    if (process.env.ONEC_METADATA_CACHE_TTL_MS && Number.isFinite(ttl) && ttl >= 0) {
+      env.metadataCacheTtlMs = ttl
     }
     if (process.env.ONEC_WRITABLE === 'true' || process.env.ONEC_WRITABLE === '1') {
       env.writable = true
@@ -40,10 +41,33 @@ export function getConfig(): OneCConfig | null {
   const configPath = getConfigPath()
   if (!existsSync(configPath)) return null
   try {
-    return JSON.parse(readFileSync(configPath, 'utf-8')) as OneCConfig
+    return normalizeFileConfig(JSON.parse(readFileSync(configPath, 'utf-8')))
   } catch {
     return null
   }
+}
+
+/**
+ * Файл конфигурации — недоверенный по типам JSON. Берём только известные поля и только
+ * ожидаемых типов; в частности запись включает лишь булево `true`, а не строка "false".
+ */
+export function normalizeFileConfig(raw: unknown): OneCConfig | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.baseUrl !== 'string' || !r.baseUrl) return null
+  if (typeof r.username !== 'string' || !r.username) return null
+
+  const config: OneCConfig = {
+    baseUrl: r.baseUrl,
+    username: r.username,
+    password: typeof r.password === 'string' ? r.password : '',
+  }
+  if (typeof r.database === 'string' && r.database) config.database = r.database
+  if (typeof r.metadataCacheTtlMs === 'number' && Number.isFinite(r.metadataCacheTtlMs) && r.metadataCacheTtlMs >= 0) {
+    config.metadataCacheTtlMs = r.metadataCacheTtlMs
+  }
+  if (r.writable === true) config.writable = true
+  return config
 }
 
 export function configMissingResponse(): string {

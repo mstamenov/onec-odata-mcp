@@ -1,6 +1,7 @@
 import type { OneCConfig, ODataMetadata } from '../types.js'
 import { DEFAULT_METADATA_CACHE_TTL_MS } from '../types.js'
 import { metadataCacheKey } from '../config.js'
+import { buildODataUrl } from '../url.js'
 import { MetadataCache } from './cache.js'
 import { parseMetadataXml, summarizeMetadata } from './parse-metadata.js'
 
@@ -20,7 +21,7 @@ export function getMetadataCache(config: OneCConfig): MetadataCache {
 }
 
 export async function defaultMetadataFetcher(config: OneCConfig): Promise<string> {
-  const url = new URL('$metadata', config.baseUrl)
+  const url = buildODataUrl(config.baseUrl, '$metadata')
   const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64')
 
   const res = await fetch(url.toString(), {

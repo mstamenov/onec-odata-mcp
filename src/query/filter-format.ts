@@ -70,18 +70,21 @@ export function formatODataLiteral(value: string | number | boolean, property: O
 
 export function formatDateTimeLiteral(raw: string): string {
   let value = raw.trim()
-  if (value.startsWith("datetime'") && value.endsWith("'")) return value
+  const wrapped = /^datetime'(.*)'$/.exec(value)
+  if (wrapped) value = wrapped[1]
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    value = `${value}T00:00:00`
-  } else if (/^\d{4}-\d{2}-\d{2}T/.test(value) && !value.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(value)) {
-    // keep as-is for 1C local datetime
-  } else if (!value.includes('T')) {
-    throw new Error(`Некорректный формат даты: ${raw}. Используйте YYYY-MM-DD или ISO datetime.`)
+  // Литерал попадает в $filter как есть, поэтому допускаем только строгую форму даты.
+  if (!DATETIME_RE.test(value)) {
+    throw new Error(
+      `Некорректный формат даты: ${JSON.stringify(raw)}. Используйте YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS.`,
+    )
   }
+  if (!value.includes('T')) value = `${value}T00:00:00`
 
   return `datetime'${value}'`
 }
+
+const DATETIME_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d{1,7})?)?(Z|[+-]\d{2}:\d{2})?)?$/
 
 export function escapeODataString(value: string): string {
   return value.replace(/'/g, "''")
@@ -101,7 +104,8 @@ export function buildFilterComparison(
     case 'le':
       return `${field} ${operator} ${literal}`
     case 'contains':
-      return `contains(${field},${literal})`
+      // 1С реализует OData v3: поиск подстроки — substringof(что, где), а не contains() из v4.
+      return `substringof(${literal},${field}) eq true`
     case 'startswith':
       return `startswith(${field},${literal})`
     default:

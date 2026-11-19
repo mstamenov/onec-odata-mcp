@@ -5,6 +5,24 @@ import { loadMetadata, getMetadataSummary, type MetadataFetcher } from './metada
 import { explainEntity } from './metadata/parse-metadata.js'
 import { buildODataQuery, parseBuildQueryArgs } from './query/builder.js'
 import type { OneCConfig } from './types.js'
+import { assertEntityKey, assertEntityName, buildWriteUrl, isInsecureBaseUrl, parseBaseUrl } from './url.js'
+
+/** Лимит записей для odata_query, если top не передан: без него 1С вернёт всю таблицу. */
+export const DEFAULT_QUERY_TOP = 100
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+/** true, если ответ инструмента — JSON-объект с полем error на верхнем уровне. */
+export function isErrorPayload(text: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(text)
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) && 'error' in parsed
+  } catch {
+    return false
+  }
+}
 
 let metadataFetcherOverride: MetadataFetcher | null = null
 
@@ -32,17 +50,26 @@ export async function handleConfig(_args: Record<string, unknown>): Promise<stri
     )
   }
 
-  return JSON.stringify(
-    {
-      configured: true,
-      baseUrl: config.baseUrl.replace(/\/$/, ''),
-      database: config.database ?? 'default',
-      metadataCacheTtlMs: config.metadataCacheTtlMs ?? 3600000,
-      note: 'Connection is configured. Try odata_list_entities or odata_explain_entity.',
-    },
-    null,
-    2,
-  )
+  try {
+    parseBaseUrl(config.baseUrl)
+  } catch (err: unknown) {
+    return JSON.stringify({ configured: false, error: errorMessage(err) }, null, 2)
+  }
+
+  const status: Record<string, unknown> = {
+    configured: true,
+    baseUrl: config.baseUrl.replace(/\/$/, ''),
+    database: config.database ?? 'default',
+    metadataCacheTtlMs: config.metadataCacheTtlMs ?? 3600000,
+    writable: config.writable === true,
+    note: 'Connection is configured. Try odata_list_entities or odata_explain_entity.',
+  }
+  if (isInsecureBaseUrl(config.baseUrl)) {
+    status.warning =
+      'baseUrl использует http без шифрования: логин и пароль передаются открытым текстом. Используйте https.'
+  }
+
+  return JSON.stringify(status, null, 2)
 }
 
 export async function handleListEntities(_args: Record<string, unknown>): Promise<string> {
@@ -58,10 +85,18 @@ export async function handleQuery(args: Record<string, unknown>): Promise<string
   const entity = String(args.entity ?? '')
   if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
 
-  return odataRequest(`/${entity}`, config, {
+  let top = DEFAULT_QUERY_TOP
+  if (args.top !== undefined && args.top !== null) {
+    top = Number(args.top)
+    if (!Number.isInteger(top) || top < 1) {
+      return JSON.stringify({ error: 'top должен быть целым числом ≥ 1' })
+    }
+  }
+
+  return odataRequest(entity, config, {
     filter: args.filter ? String(args.filter) : undefined,
     select: args.select ? String(args.select) : undefined,
-    top: args.top ? Number(args.top) : undefined,
+    top,
     orderBy: args.orderBy ? String(args.orderBy) : undefined,
     expand: args.expand ? String(args.expand) : undefined,
   })
@@ -188,17 +223,24 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
       ? (args.data as Record<string, unknown>)
       : undefined
 
+  if ((method === 'create' || method === 'update') && data === undefined) {
+    return JSON.stringify({ error: 'Поле data должно быть JSON-объектом' })
+  }
+
+  // Валидация до dry-run: превью обязано показывать ровно тот адрес, куда уйдёт запись.
+  let url: string
+  try {
+    assertEntityName(entity)
+    if (key !== undefined) assertEntityKey(key)
+    url = decodeURI(buildWriteUrl(config.baseUrl, entity, method, key).toString())
+  } catch (err: unknown) {
+    return JSON.stringify({ error: errorMessage(err) })
+  }
+
   // dryRun defaults to true — only explicit false enables real write path
   const dryRun = args.dryRun !== false
 
   if (dryRun) {
-    const base = config.baseUrl.replace(/\/$/, '')
-    let url: string
-    if (method === 'create') {
-      url = `${base}/${entity}`
-    } else {
-      url = `${base}/${entity}(${key})`
-    }
     const wouldExecute: Record<string, unknown> = { method, entity, url }
     if (key !== undefined) wouldExecute.key = key
     if (method === 'create' || method === 'update') wouldExecute.body = data
@@ -206,8 +248,12 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
     return JSON.stringify(
       {
         dryRun: true,
+        writable: config.writable === true,
         wouldExecute,
-        note: 'Запись НЕ выполнена (dry-run). Передайте dryRun:false, если действительно нужно записать.',
+        note:
+          config.writable === true
+            ? 'Запись НЕ выполнена (dry-run). Передайте dryRun:false, если действительно нужно записать.'
+            : 'Запись НЕ выполнена (dry-run). Запись в эту базу отключена (writable=false): dryRun:false вернёт ошибку.',
       },
       null,
       2,
@@ -334,7 +380,7 @@ export const toolDefinitions = [
         entity: { type: 'string', description: 'Target entity name' },
         filters: {
           type: 'array',
-          description: 'Structured filters: field, operator (eq/ne/gt/ge/lt/le/contains/startswith), value',
+          description: 'Structured filters: field, operator (eq/ne/gt/ge/lt/le/contains/startswith), value. contains is emitted as OData v3 substringof().',
           items: {
             type: 'object',
             properties: {
@@ -375,14 +421,18 @@ export const toolDefinitions = [
   {
     name: 'odata_query',
     description:
-      'Query 1С OData entity with filter, select, top, orderBy, expand. Example: entity="Catalog_Контрагенты" filter="Description eq \'ООО Ромашка\'"',
+      `Query 1С OData entity with filter, select, top, orderBy, expand. Returns at most ${DEFAULT_QUERY_TOP} records unless top is given. ` +
+      'Example: entity="Catalog_Контрагенты" filter="Description eq \'ООО Ромашка\'"',
     inputSchema: {
       type: 'object',
       properties: {
         entity: { type: 'string', description: 'Entity name (e.g. Catalog_Контрагенты)' },
         filter: { type: 'string', description: 'OData $filter expression' },
         select: { type: 'string', description: 'Comma-separated fields ($select)' },
-        top: { type: 'number', description: 'Max records ($top)' },
+        top: {
+          type: 'number',
+          description: `Max records ($top). Defaults to ${DEFAULT_QUERY_TOP} when omitted — pass a larger value explicitly if you need more.`,
+        },
         orderBy: { type: 'string', description: 'Sort field ($orderby)' },
         expand: { type: 'string', description: 'Navigation properties ($expand)' },
       },
