@@ -73,10 +73,10 @@ export function normalizeFileConfig(raw: unknown): OneCConfig | null {
 export function configMissingResponse(): string {
   return JSON.stringify(
     {
-      error: '1С OData не настроен',
+      error: '1С OData не е конфигуриран',
       configPath: getConfigPath(),
       instructions: CONFIG_SETUP_INSTRUCTIONS,
-      fix: 'Set ONEC_BASE_URL / ONEC_USERNAME / ONEC_PASSWORD env vars, or create ~/.onec-odata/onec-config.json',
+      fix: 'Задайте променливите на средата ONEC_BASE_URL / ONEC_USERNAME / ONEC_PASSWORD или създайте ~/.onec-odata/onec-config.json',
     },
     null,
     2,

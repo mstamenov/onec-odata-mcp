@@ -43,11 +43,11 @@ function validateFilters(
     if (!resolved) {
       const fieldNames = entity.properties.map((p) => p.name)
       const hint = maybeYouMeant(f.field, fieldNames.filter((n) => !isSecretFieldName(n)))
-      throw new Error(`Поле "${f.field}" не найдено в ${entity.name}.${hint ? ` ${hint}` : ''}`)
+      throw new Error(`Полето "${f.field}" не е намерено в ${entity.name}.${hint ? ` ${hint}` : ''}`)
     }
     if (resolved.kind === 'navigation') {
       warnings.push(
-        `Поле "${f.field}" — навигационное свойство; для фильтрации может потребоваться $expand.`,
+        `Полето "${f.field}" е навигационно свойство; за филтриране може да е нужен $expand.`,
       )
       continue
     }
@@ -69,10 +69,10 @@ function validateDatePeriod(
   if (!resolved || resolved.kind !== 'property') {
     const fieldNames = entity.properties.map((p) => p.name)
     const hint = maybeYouMeant(period.field, fieldNames.filter((n) => !isSecretFieldName(n)))
-    throw new Error(`Поле периода "${period.field}" не найдено.${hint ? ` ${hint}` : ''}`)
+    throw new Error(`Полето за период "${period.field}" не е намерено.${hint ? ` ${hint}` : ''}`)
   }
   if (!isDateType(resolved.prop.type)) {
-    warnings.push(`Поле "${period.field}" имеет тип ${resolved.prop.type}, не дата — фильтр периода может не сработать.`)
+    warnings.push(`Полето "${period.field}" е от тип ${resolved.prop.type}, а не дата — филтърът по период може да не сработи.`)
   }
   if (period.from) {
     parts.push(`${period.field} ge ${formatDateTimeLiteral(period.from)}`)
@@ -91,7 +91,7 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
   if (!entityType) {
     const hint = maybeYouMeant(input.entity, entityNames)
     const suggestions = fuzzySuggestions(input.entity, entityNames)
-    throw new Error(`Сущность "${input.entity}" не найдена в metadata.${hint ? ` ${hint}` : ''}`, {
+    throw new Error(`Обектът "${input.entity}" не е намерен в метаданните.${hint ? ` ${hint}` : ''}`, {
       cause: { suggestions },
     })
   }
@@ -112,14 +112,14 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
         if (!resolved) {
           const fieldNames = entityType!.properties.map((p) => p.name)
           const hint = maybeYouMeant(o.field, fieldNames.filter((n) => !isSecretFieldName(n)))
-          throw new Error(`Поле сортировки "${o.field}" не найдено.${hint ? ` ${hint}` : ''}`)
+          throw new Error(`Полето за сортиране "${o.field}" не е намерено.${hint ? ` ${hint}` : ''}`)
         }
         if (resolved.kind === 'navigation') {
-          warnings.push(`Сортировка по навигационному свойству "${o.field}" может не поддерживаться.`)
+          warnings.push(`Сортирането по навигационното свойство "${o.field}" може да не се поддържа.`)
         }
         const direction = o.direction ?? 'asc'
         if (direction !== 'asc' && direction !== 'desc') {
-          throw new Error(`Направление сортировки должно быть asc или desc, получено: ${JSON.stringify(direction)}`)
+          throw new Error(`Посоката на сортиране трябва да е asc или desc, получено: ${JSON.stringify(direction)}`)
         }
         return `${o.field} ${direction}`
       })
@@ -132,7 +132,7 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
       if (!resolveField(entityType, field)) {
         const fieldNames = entityType.properties.map((p) => p.name)
         const hint = maybeYouMeant(field, fieldNames.filter((n) => !isSecretFieldName(n)))
-        throw new Error(`Поле select "${field}" не найдено.${hint ? ` ${hint}` : ''}`)
+        throw new Error(`Полето "${field}" от select не е намерено.${hint ? ` ${hint}` : ''}`)
       }
     }
     select = input.select.join(',')
@@ -145,7 +145,7 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
       if (!nav) {
         const navNames = entityType.navigationProperties.map((n) => n.name)
         const hint = maybeYouMeant(field, navNames)
-        throw new Error(`Navigation expand "${field}" не найден.${hint ? ` ${hint}` : ''}`)
+        throw new Error(`Навигационното свойство "${field}" за expand не е намерено.${hint ? ` ${hint}` : ''}`)
       }
     }
     expand = input.expand.join(',')
@@ -168,12 +168,12 @@ export function buildODataQuery(input: BuildQueryInput, metadata: ODataMetadata)
   })
 
   const explanationLines = [
-    `Сущность: ${queryEntity}`,
-    filter ? `Фильтр: ${filter}` : 'Фильтр: (нет)',
-    select ? `Поля: ${select}` : 'Поля: (все)',
-    input.top ? `Лимит: ${input.top}` : 'Лимит: (по умолчанию сервера)',
-    orderBy ? `Сортировка: ${orderBy}` : 'Сортировка: (нет)',
-    expand ? `Expand: ${expand}` : 'Expand: (нет)',
+    `Обект: ${queryEntity}`,
+    filter ? `Филтър: ${filter}` : 'Филтър: (няма)',
+    select ? `Полета: ${select}` : 'Полета: (всички)',
+    input.top ? `Лимит: ${input.top}` : 'Лимит: (по подразбиране)',
+    orderBy ? `Сортиране: ${orderBy}` : 'Сортиране: (няма)',
+    expand ? `Expand: ${expand}` : 'Expand: (няма)',
     encodedUrl ? `Query string (URL-encoded): ${encodedUrl}` : '',
   ].filter(Boolean)
 

@@ -233,7 +233,7 @@ test('writable is enabled only by boolean true in the config file', async () => 
 
     const preview = JSON.parse(await handleWrite({ entity: 'Catalog_X', method: 'create', data: {} }))
     assert.equal(preview.writable, false)
-    assert.match(preview.note, /отключена/)
+    assert.match(preview.note, /изключен/)
   })
 })
 
@@ -275,6 +275,6 @@ test('buildODataQuery rejects an injected sort direction and date', () => {
         },
         metadata,
       ),
-    /Некорректный формат даты/,
+    /Невалиден формат на дата/,
   )
 })

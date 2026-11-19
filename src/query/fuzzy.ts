@@ -57,5 +57,5 @@ export function fuzzySuggestions(
 export function maybeYouMeant(query: string, candidates: string[]): string | undefined {
   const suggestions = fuzzySuggestions(query, candidates)
   if (suggestions.length === 0) return undefined
-  return `Возможно, вы имели в виду: ${suggestions.join(', ')}`
+  return `Може би имахте предвид: ${suggestions.join(', ')}`
 }

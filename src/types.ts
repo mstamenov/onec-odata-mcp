@@ -83,13 +83,12 @@ export const CONFIG_PATH_SUFFIX = '.onec-odata/onec-config.json'
 export const DEFAULT_METADATA_CACHE_TTL_MS = 60 * 60 * 1000
 
 export const CONFIG_SETUP_INSTRUCTIONS = {
-  ru: 'Настройте подключение к OData 1С через переменные окружения или файл конфигурации.',
-  en: 'Configure the 1C OData connection via environment variables or a config file.',
+  bg: 'Конфигурирайте връзката към OData на 1С чрез променливи на средата или конфигурационен файл.',
   steps: [
-    '1. Убедитесь, что в 1С опубликован OData (standard.odata).',
-    '2a. Рекомендуется — задайте env-переменные: ONEC_BASE_URL, ONEC_USERNAME, ONEC_PASSWORD (опционально ONEC_DATABASE, ONEC_METADATA_CACHE_TTL_MS).',
-    '2b. Либо создайте файл ~/.onec-odata/onec-config.json с полями baseUrl, username, password.',
-    '3. Проверьте: вызовите odata_config или odata_list_entities.',
+    '1. Уверете се, че в 1С е публикуван OData (standard.odata).',
+    '2a. Препоръчително — задайте променливите на средата: ONEC_BASE_URL, ONEC_USERNAME, ONEC_PASSWORD (по избор ONEC_DATABASE, ONEC_METADATA_CACHE_TTL_MS).',
+    '2b. Или създайте файл ~/.onec-odata/onec-config.json с полета baseUrl, username, password.',
+    '3. Проверете: извикайте odata_config или odata_list_entities.',
   ],
   example: {
     baseUrl: 'https://1c.example.com/your_db/odata/standard.odata',

@@ -76,7 +76,7 @@ export async function odataCount(
     const text = (await res.text()).trim()
     const count = Number(text)
     if (text === '' || !Number.isFinite(count)) {
-      return JSON.stringify({ error: 'Сервер вернул не число в ответ на $count', detail: text.slice(0, 200) })
+      return JSON.stringify({ error: 'Сървърът върна нечислов отговор на $count', detail: text.slice(0, 200) })
     }
     return JSON.stringify({ entity, count })
   } catch (err: unknown) {

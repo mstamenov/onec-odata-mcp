@@ -30,7 +30,7 @@ export async function defaultMetadataFetcher(config: OneCConfig): Promise<string
   })
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status} fetching $metadata`)
+    throw new Error(`HTTP ${res.status} при зареждане на $metadata`)
   }
 
   return res.text()

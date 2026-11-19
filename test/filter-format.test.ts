@@ -58,6 +58,6 @@ test('formatDateTimeLiteral rejects anything that is not a strict date', () => {
     '2024-01-01T00:00:00 or true',
     'вчера',
   ]) {
-    assert.throws(() => formatDateTimeLiteral(bad), /Некорректный формат даты/, bad)
+    assert.throws(() => formatDateTimeLiteral(bad), /Невалиден формат на дата/, bad)
   }
 })

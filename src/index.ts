@@ -31,7 +31,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   const handler = toolHandlers[name]
   if (!handler) {
-    return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true }
+    return { content: [{ type: 'text', text: `Непознат инструмент: ${name}` }], isError: true }
   }
 
   try {
@@ -39,7 +39,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return { content: [{ type: 'text', text: result }], isError: isErrorPayload(result) }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
-    return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true }
+    return { content: [{ type: 'text', text: `Грешка: ${message}` }], isError: true }
   }
 })
 

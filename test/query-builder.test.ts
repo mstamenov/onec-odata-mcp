@@ -27,7 +27,7 @@ test('buildODataQuery positive: filters + top + order + select', () => {
   assert.ok(result.queryParams.filter?.includes("Description eq 'ООО Ромашка'"))
   assert.equal(result.queryParams.top, 10)
   assert.equal(result.queryParams.select, 'Description,ИНН')
-  assert.ok(result.explanation.includes('Сущность'))
+  assert.ok(result.explanation.includes('Обект'))
 })
 
 test('buildODataQuery negative: unknown entity with fuzzy hint', () => {
@@ -38,8 +38,8 @@ test('buildODataQuery negative: unknown entity with fuzzy hint', () => {
         metadata,
       ),
     (err: Error) => {
-      assert.match(err.message, /не найдена/)
-      assert.match(err.message, /Возможно/)
+      assert.match(err.message, /не е намерен/)
+      assert.match(err.message, /Може би/)
       return true
     },
   )

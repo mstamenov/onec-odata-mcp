@@ -15,10 +15,10 @@ export function parseBaseUrl(baseUrl: string): URL {
   try {
     url = new URL(baseUrl)
   } catch {
-    throw new Error('Некорректный baseUrl: ожидается полный адрес вида https://host/db/odata/standard.odata')
+    throw new Error('Невалиден baseUrl: очаква се пълен адрес от вида https://host/db/odata/standard.odata')
   }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    throw new Error(`Некорректный baseUrl: схема ${url.protocol} не поддерживается (нужен http или https)`)
+    throw new Error(`Невалиден baseUrl: схемата ${url.protocol} не се поддържа (нужен е http или https)`)
   }
   return url
 }
@@ -38,11 +38,11 @@ export function isInsecureBaseUrl(baseUrl: string): boolean {
 export function assertResourcePath(path: string): void {
   if (path === '') return
   if (CONTROL_CHARS.test(path) || FORBIDDEN_IN_PATH.test(path)) {
-    throw new Error(`Недопустимые символы в имени сущности: ${JSON.stringify(path)}`)
+    throw new Error(`Недопустими символи в името на обекта: ${JSON.stringify(path)}`)
   }
   for (const segment of path.split('/')) {
     if (segment === '' || segment === '.' || segment === '..') {
-      throw new Error(`Недопустимый путь сущности: ${JSON.stringify(path)}`)
+      throw new Error(`Недопустим път на обекта: ${JSON.stringify(path)}`)
     }
   }
 }
@@ -51,7 +51,7 @@ export function assertResourcePath(path: string): void {
 export function assertEntityName(entity: string): void {
   if (!ENTITY_NAME.test(entity)) {
     throw new Error(
-      `Недопустимое имя сущности для записи: ${JSON.stringify(entity)}. Ожидается идентификатор вида Catalog_Контрагенты.`,
+      `Недопустимо име на обект за запис: ${JSON.stringify(entity)}. Очаква се идентификатор от вида Catalog_Контрагенты.`,
     )
   }
 }
@@ -59,7 +59,7 @@ export function assertEntityName(entity: string): void {
 /** Ключ сущности, подставляемый в скобки: guid'...', число, 'строка' или составной Имя=значение,... */
 export function assertEntityKey(key: string): void {
   if (key === '' || CONTROL_CHARS.test(key) || FORBIDDEN_IN_KEY.test(key)) {
-    throw new Error(`Недопустимый ключ сущности: ${JSON.stringify(key)}`)
+    throw new Error(`Недопустим ключ на обекта: ${JSON.stringify(key)}`)
   }
 }
 
@@ -72,7 +72,7 @@ export function buildODataUrl(baseUrl: string, resourcePath = ''): URL {
 
   const inside = url.pathname === basePath || url.pathname.startsWith(`${basePath}/`)
   if (url.origin !== base.origin || !inside) {
-    throw new Error(`Путь ${JSON.stringify(resourcePath)} выходит за пределы baseUrl`)
+    throw new Error(`Пътят ${JSON.stringify(resourcePath)} излиза извън baseUrl`)
   }
   return url
 }
@@ -83,7 +83,7 @@ export type WriteMethod = 'create' | 'update' | 'delete'
 export function buildWriteUrl(baseUrl: string, entity: string, method: WriteMethod, key?: string): URL {
   assertEntityName(entity)
   if (method === 'create') return buildODataUrl(baseUrl, entity)
-  if (key === undefined) throw new Error('Не указан ключ сущности (нужен для update/delete)')
+  if (key === undefined) throw new Error('Не е посочен ключ на обекта (нужен за update/delete)')
   assertEntityKey(key)
   return buildODataUrl(baseUrl, `${entity}(${key})`)
 }

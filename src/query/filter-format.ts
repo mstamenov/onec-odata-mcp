@@ -42,13 +42,13 @@ export function formatODataLiteral(value: string | number | boolean, property: O
     if (typeof value === 'boolean') return value ? 'true' : 'false'
     const s = String(value).toLowerCase()
     if (s === 'true' || s === 'false') return s
-    throw new Error(`Поле "${property.name}" ожидает boolean, получено: ${JSON.stringify(value)}`)
+    throw new Error(`Полето "${property.name}" очаква boolean, получено: ${JSON.stringify(value)}`)
   }
 
   if (isNumberType(type)) {
     const num = typeof value === 'number' ? value : Number(value)
     if (Number.isNaN(num)) {
-      throw new Error(`Поле "${property.name}" ожидает число, получено: ${JSON.stringify(value)}`)
+      throw new Error(`Полето "${property.name}" очаква число, получено: ${JSON.stringify(value)}`)
     }
     return String(num)
   }
@@ -56,7 +56,7 @@ export function formatODataLiteral(value: string | number | boolean, property: O
   if (isGuidType(type)) {
     const s = String(value).replace(/^guid'|'$/g, '')
     if (!GUID_RE.test(s)) {
-      throw new Error(`Поле "${property.name}" ожидает GUID, получено: ${JSON.stringify(value)}`)
+      throw new Error(`Полето "${property.name}" очаква GUID, получено: ${JSON.stringify(value)}`)
     }
     return `guid'${s.toLowerCase()}'`
   }
@@ -76,7 +76,7 @@ export function formatDateTimeLiteral(raw: string): string {
   // Литерал попадает в $filter как есть, поэтому допускаем только строгую форму даты.
   if (!DATETIME_RE.test(value)) {
     throw new Error(
-      `Некорректный формат даты: ${JSON.stringify(raw)}. Используйте YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS.`,
+      `Невалиден формат на дата: ${JSON.stringify(raw)}. Използвайте YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS.`,
     )
   }
   if (!value.includes('T')) value = `${value}T00:00:00`
@@ -109,7 +109,7 @@ export function buildFilterComparison(
     case 'startswith':
       return `startswith(${field},${literal})`
     default:
-      throw new Error(`Неподдерживаемый оператор: ${operator}`)
+      throw new Error(`Неподдържан оператор: ${operator}`)
   }
 }
 

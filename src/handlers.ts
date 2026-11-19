@@ -43,7 +43,7 @@ export async function handleConfig(_args: Record<string, unknown>): Promise<stri
         configPath: getConfigPath(),
         setup: CONFIG_SETUP_INSTRUCTIONS.example,
         instructions: CONFIG_SETUP_INSTRUCTIONS,
-        note: '1С OData must be enabled in 1С configuration (Publish to web / OData standard)',
+        note: 'OData трябва да е публикуван в конфигурацията на 1С (уеб публикация / стандартен OData интерфейс)',
       },
       null,
       2,
@@ -62,11 +62,11 @@ export async function handleConfig(_args: Record<string, unknown>): Promise<stri
     database: config.database ?? 'default',
     metadataCacheTtlMs: config.metadataCacheTtlMs ?? 3600000,
     writable: config.writable === true,
-    note: 'Connection is configured. Try odata_list_entities or odata_explain_entity.',
+    note: 'Връзката е конфигурирана. Опитайте odata_list_entities или odata_explain_entity.',
   }
   if (isInsecureBaseUrl(config.baseUrl)) {
     status.warning =
-      'baseUrl использует http без шифрования: логин и пароль передаются открытым текстом. Используйте https.'
+      'baseUrl използва http без криптиране: потребителското име и паролата се предават в явен вид. Използвайте https.'
   }
 
   return JSON.stringify(status, null, 2)
@@ -83,13 +83,13 @@ export async function handleQuery(args: Record<string, unknown>): Promise<string
   if (!config) return configMissingResponse()
 
   const entity = String(args.entity ?? '')
-  if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
+  if (!entity) return JSON.stringify({ error: 'Липсва задължително поле: entity' })
 
   let top = DEFAULT_QUERY_TOP
   if (args.top !== undefined && args.top !== null) {
     top = Number(args.top)
     if (!Number.isInteger(top) || top < 1) {
-      return JSON.stringify({ error: 'top должен быть целым числом ≥ 1' })
+      return JSON.stringify({ error: 'top трябва да е цяло число ≥ 1' })
     }
   }
 
@@ -107,7 +107,7 @@ export async function handleCount(args: Record<string, unknown>): Promise<string
   if (!config) return configMissingResponse()
 
   const entity = String(args.entity ?? '')
-  if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
+  if (!entity) return JSON.stringify({ error: 'Липсва задължително поле: entity' })
 
   return odataCount(entity, config, args.filter ? String(args.filter) : undefined)
 }
@@ -127,7 +127,7 @@ export async function handleMetadata(args: Record<string, unknown>): Promise<str
     return JSON.stringify(
       {
         ...summary,
-        note: 'Use odata_explain_entity for field details. Use odata_build_query to construct validated queries.',
+        note: 'Използвайте odata_explain_entity за подробности за полетата и odata_build_query за съставяне на валидирани заявки.',
       },
       null,
       2,
@@ -143,7 +143,7 @@ export async function handleExplainEntity(args: Record<string, unknown>): Promis
   if (!config) return configMissingResponse()
 
   const entity = String(args.entity ?? '')
-  if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
+  if (!entity) return JSON.stringify({ error: 'Липсва задължително поле: entity' })
 
   try {
     const fetcher = metadataFetcherOverride ?? undefined
@@ -151,8 +151,8 @@ export async function handleExplainEntity(args: Record<string, unknown>): Promis
     const explained = explainEntity(metadata, entity)
     if (!explained) {
       return JSON.stringify({
-        error: `Сущность "${entity}" не найдена в metadata`,
-        hint: 'Вызовите odata_metadata для списка сущностей',
+        error: `Обектът "${entity}" не е намерен в метаданните`,
+        hint: 'Извикайте odata_metadata за списък на обектите',
       })
     }
     return JSON.stringify(explained, null, 2)
@@ -167,7 +167,7 @@ export async function handleBuildQuery(args: Record<string, unknown>): Promise<s
   if (!config) return configMissingResponse()
 
   const input = parseBuildQueryArgs(args)
-  if (!input.entity) return JSON.stringify({ error: 'Missing required field: entity' })
+  if (!input.entity) return JSON.stringify({ error: 'Липсва задължително поле: entity' })
 
   try {
     const fetcher = metadataFetcherOverride ?? undefined
@@ -199,22 +199,22 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
   if (!config) return configMissingResponse()
 
   const entity = String(args.entity ?? '')
-  if (!entity) return JSON.stringify({ error: 'Missing required field: entity' })
+  if (!entity) return JSON.stringify({ error: 'Липсва задължително поле: entity' })
 
   const method = String(args.method ?? '') as ODataWriteMethod
   if (method !== 'create' && method !== 'update' && method !== 'delete') {
     return JSON.stringify({
-      error: 'Invalid method',
-      hint: 'method must be one of: create, update, delete',
+      error: 'Невалиден метод',
+      hint: 'method трябва да е едно от: create, update, delete',
     })
   }
 
   if ((method === 'update' || method === 'delete') && (args.key === undefined || args.key === null || args.key === '')) {
-    return JSON.stringify({ error: 'Missing required field: key (required for update/delete)' })
+    return JSON.stringify({ error: 'Липсва задължително поле: key (нужно за update/delete)' })
   }
 
   if ((method === 'create' || method === 'update') && (args.data === undefined || args.data === null)) {
-    return JSON.stringify({ error: 'Missing required field: data (required for create/update)' })
+    return JSON.stringify({ error: 'Липсва задължително поле: data (нужно за create/update)' })
   }
 
   const key = args.key !== undefined && args.key !== null ? String(args.key) : undefined
@@ -224,7 +224,7 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
       : undefined
 
   if ((method === 'create' || method === 'update') && data === undefined) {
-    return JSON.stringify({ error: 'Поле data должно быть JSON-объектом' })
+    return JSON.stringify({ error: 'Полето data трябва да е JSON обект' })
   }
 
   // Валидация до dry-run: превью обязано показывать ровно тот адрес, куда уйдёт запись.
@@ -252,8 +252,8 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
         wouldExecute,
         note:
           config.writable === true
-            ? 'Запись НЕ выполнена (dry-run). Передайте dryRun:false, если действительно нужно записать.'
-            : 'Запись НЕ выполнена (dry-run). Запись в эту базу отключена (writable=false): dryRun:false вернёт ошибку.',
+            ? 'Записът НЕ е изпълнен (dry-run). Подайте dryRun:false, ако наистина трябва да се запише.'
+            : 'Записът НЕ е изпълнен (dry-run). Записът в тази база е изключен (writable=false): dryRun:false ще върне грешка.',
       },
       null,
       2,
@@ -263,11 +263,11 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
   if (!config.writable) {
     return JSON.stringify(
       {
-        error: 'Запись в эту базу отключена (writable=false)',
+        error: 'Записът в тази база е изключен (writable=false)',
         entity,
         method,
         hint:
-          'Включите запись явно: ONEC_WRITABLE=true в env, либо "writable": true в ~/.onec-odata/onec-config.json — только если это осознанное решение для этой базы.',
+          'Включете записа изрично: ONEC_WRITABLE=true в средата или "writable": true в ~/.onec-odata/onec-config.json — само ако това е съзнателно решение за тази база.',
       },
       null,
       2,
@@ -305,7 +305,7 @@ export async function handleFinancialSummary(_args: Record<string, unknown>): Pr
         results[entity] = { status: 'available', count: parsed.count }
       }
     } catch {
-      results[entity] = { status: 'error parsing response' }
+      results[entity] = { status: 'грешка при разчитане на отговора' }
     }
   }
 
@@ -318,8 +318,8 @@ export async function handleFinancialSummary(_args: Record<string, unknown>): Pr
       entities: results,
       recommendation:
         available.length > 0
-          ? `Found ${available.length} financial entities. Use odata_build_query or odata_query.`
-          : 'No standard financial entities found. Run odata_metadata to see available entities.',
+          ? `Намерени финансови обекти: ${available.length}. Използвайте odata_build_query или odata_query.`
+          : 'Не са намерени стандартни финансови обекти. Извикайте odata_metadata, за да видите наличните.',
     },
     null,
     2,
@@ -485,7 +485,7 @@ export const toolDefinitions = [
   {
     name: 'odata_financial_summary',
     description:
-      'Auto-detect common 1С financial entities (счета, реализации, контрагенты, заявки) and show counts',
+      'Auto-detect common 1С financial entities (invoices, sales, purchases, counterparties, orders) and show counts',
     inputSchema: { type: 'object', properties: {} },
   },
 ] as const
