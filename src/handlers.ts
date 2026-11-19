@@ -277,55 +277,6 @@ export async function handleWrite(args: Record<string, unknown>): Promise<string
   return odataWrite(entity, method, config, { key, data })
 }
 
-export async function handleFinancialSummary(_args: Record<string, unknown>): Promise<string> {
-  const config = requireConfig()
-  if (!config) return configMissingResponse()
-
-  const commonEntities = [
-    'Document_СчетНаОплатуПокупателю',
-    'Document_РеализацияТоваровУслуг',
-    'Document_ПоступлениеТоваровУслуг',
-    'Document_СчетФактура',
-    'Document_SalesOrder',
-    'Document_ПлатежноеПоручение',
-    'Catalog_Контрагенты',
-    'Catalog_Номенклатура',
-    'Catalog_ДоговорыКонтрагентов',
-  ]
-
-  const results: Record<string, { status: string; count?: number }> = {}
-
-  for (const entity of commonEntities) {
-    const raw = await odataCount(entity, config)
-    try {
-      const parsed = JSON.parse(raw) as { error?: string; count?: number }
-      if (parsed.error) {
-        results[entity] = { status: parsed.error }
-      } else {
-        results[entity] = { status: 'available', count: parsed.count }
-      }
-    } catch {
-      results[entity] = { status: 'грешка при разчитане на отговора' }
-    }
-  }
-
-  const available = Object.entries(results).filter(([, v]) => v.status === 'available')
-
-  return JSON.stringify(
-    {
-      config: config.baseUrl,
-      available: available.length,
-      entities: results,
-      recommendation:
-        available.length > 0
-          ? `Намерени финансови обекти: ${available.length}. Използвайте odata_build_query или odata_query.`
-          : 'Не са намерени стандартни финансови обекти. Извикайте odata_metadata, за да видите наличните.',
-    },
-    null,
-    2,
-  )
-}
-
 export const toolHandlers: Record<string, (args: Record<string, unknown>) => Promise<string> | string> = {
   odata_config: handleConfig,
   odata_list_entities: handleListEntities,
@@ -335,7 +286,6 @@ export const toolHandlers: Record<string, (args: Record<string, unknown>) => Pro
   odata_query: handleQuery,
   odata_count: handleCount,
   odata_write: handleWrite,
-  odata_financial_summary: handleFinancialSummary,
 }
 
 export const toolDefinitions = [
@@ -481,11 +431,5 @@ export const toolDefinitions = [
       },
       required: ['entity', 'method'],
     },
-  },
-  {
-    name: 'odata_financial_summary',
-    description:
-      'Auto-detect common 1С financial entities (invoices, sales, purchases, counterparties, orders) and show counts',
-    inputSchema: { type: 'object', properties: {} },
   },
 ] as const
