@@ -1,4 +1,5 @@
 import type { ODataProperty } from '../types.js'
+import { setODataQuery } from '../url.js'
 
 const DATE_TYPES = new Set(['Edm.DateTime', 'Edm.DateTimeOffset', 'Edm.Date'])
 const NUMBER_TYPES = new Set(['Edm.Int16', 'Edm.Int32', 'Edm.Int64', 'Edm.Decimal', 'Edm.Double', 'Edm.Single', 'Edm.Byte'])
@@ -121,10 +122,6 @@ export function joinFilters(parts: string[]): string | undefined {
 
 export function encodeODataQueryParams(params: Record<string, string | number | undefined>): string {
   const url = new URL('http://local.test/entity')
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== '') {
-      url.searchParams.set(key, String(value))
-    }
-  }
+  setODataQuery(url, params)
   return url.search.slice(1)
 }

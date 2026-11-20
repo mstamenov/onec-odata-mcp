@@ -1,5 +1,5 @@
 import type { OneCConfig } from './types.js'
-import { buildODataUrl, buildWriteUrl, type WriteMethod } from './url.js'
+import { buildODataUrl, buildWriteUrl, setODataQuery, type WriteMethod } from './url.js'
 
 export type ODataRequestOptions = {
   filter?: string
@@ -26,11 +26,13 @@ export async function odataRequest(
   try {
     const url = buildODataUrl(config.baseUrl, path)
 
-    if (options?.filter) url.searchParams.set('$filter', options.filter)
-    if (options?.select) url.searchParams.set('$select', options.select)
-    if (options?.top !== undefined) url.searchParams.set('$top', String(options.top))
-    if (options?.orderBy) url.searchParams.set('$orderby', options.orderBy)
-    if (options?.expand) url.searchParams.set('$expand', options.expand)
+    setODataQuery(url, {
+      $filter: options?.filter,
+      $select: options?.select,
+      $top: options?.top,
+      $orderby: options?.orderBy,
+      $expand: options?.expand,
+    })
 
     const res = await fetch(url.toString(), {
       headers: {
@@ -59,12 +61,13 @@ export async function odataCount(
 ): Promise<string> {
   try {
     const url = buildODataUrl(config.baseUrl, `${entity}/$count`)
-    if (filter) url.searchParams.set('$filter', filter)
+    setODataQuery(url, { $filter: filter })
 
     const res = await fetch(url.toString(), {
       headers: {
         Authorization: basicAuth(config),
-        Accept: 'text/plain',
+        // 1С отвечает 406 на Accept: text/plain; с application/json отдаёт число как есть.
+        Accept: 'application/json',
       },
       signal: AbortSignal.timeout(30000),
     })

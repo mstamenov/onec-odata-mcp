@@ -278,3 +278,36 @@ test('buildODataQuery rejects an injected sort direction and date', () => {
     /Невалиден формат на дата/,
   )
 })
+
+test('query string encodes spaces as %20, never as + (1С does not decode + as a space)', async () => {
+  await withMock(baseConfig, async (calls) => {
+    await handleQuery({
+      entity: 'Document_X',
+      filter: "Number eq '0000000001' and Total gt 1+1",
+      orderBy: 'Date desc',
+    })
+    const query = calls[0].url.split('?')[1]
+    assert.ok(!query.includes('+'), query)
+    assert.ok(query.includes('Number%20eq%20'), query)
+    assert.ok(query.includes('Date%20desc'), query)
+    // буквалният плюс остава плюс след декодиране
+    const url = new URL(calls[0].url.replace(/%20/g, '+'))
+    assert.equal(url.searchParams.get('$filter'), "Number eq '0000000001' and Total gt 1+1")
+
+    await handleCount({ entity: 'Document_X', filter: 'Posted eq true' })
+    assert.ok(calls[1].url.endsWith('Posted%20eq%20true'), calls[1].url)
+  })
+})
+
+test('odata_count asks for application/json (1С answers 406 to Accept: text/plain)', async () => {
+  await withMock(
+    baseConfig,
+    async (calls) => {
+      const parsed = JSON.parse(await handleCount({ entity: 'Catalog_X' }))
+      assert.equal(parsed.count, 46)
+      const headers = calls[0].init?.headers as Record<string, string>
+      assert.equal(headers.Accept, 'application/json')
+    },
+    () => new Response('46', { status: 200 }),
+  )
+})

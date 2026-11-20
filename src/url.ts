@@ -87,3 +87,21 @@ export function buildWriteUrl(baseUrl: string, entity: string, method: WriteMeth
   assertEntityKey(key)
   return buildODataUrl(baseUrl, `${entity}(${key})`)
 }
+
+/**
+ * Задаёт параметры запроса OData ($filter, $orderby, ...).
+ *
+ * URLSearchParams кодирует пробел как `+` (application/x-www-form-urlencoded), а 1С
+ * `+` в пробел не превращает: `$filter=Number+eq+'1'` доходит до платформы обрезанным
+ * до первого слова. Поэтому пробелы уходят как `%20`. Буквальный плюс URLSearchParams
+ * уже записал как `%2B`, так что замена затрагивает только пробелы.
+ *
+ * После вызова нельзя трогать url.searchParams — он пересериализует строку с `+`.
+ */
+export function setODataQuery(url: URL, params: Record<string, string | number | undefined>): void {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') search.set(key, String(value))
+  }
+  url.search = search.toString().replace(/\+/g, '%20')
+}

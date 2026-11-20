@@ -61,3 +61,10 @@ test('formatDateTimeLiteral rejects anything that is not a strict date', () => {
     assert.throws(() => formatDateTimeLiteral(bad), /Невалиден формат на дата/, bad)
   }
 })
+
+test('encodeODataQueryParams encodes spaces as %20, not +', () => {
+  const qs = encodeODataQueryParams({ $filter: "Number eq '1'", $orderby: 'Date desc' })
+  assert.ok(!qs.includes('+'), qs)
+  assert.ok(qs.includes('Number%20eq%20'), qs)
+  assert.ok(qs.includes('Date%20desc'), qs)
+})
